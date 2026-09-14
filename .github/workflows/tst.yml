@@ -1,0 +1,44 @@
+name: Repro LFS bug ch
+
+on:
+  workflow_dispatch:
+    inputs:
+      sleep_before_start:
+        description: 'Delay in seconds before the first step'
+        required: false
+        default: '0'
+        type: number
+      runner:
+        description: 'Runner to use for the job'
+        required: false
+        default: 'ubuntu-latest'
+        type: choice
+        options:
+          - ubuntu-latest
+          - img-ubuntu-latest
+
+jobs:
+  reproduce:
+    runs-on: ${{ inputs.runner }}
+    steps:
+      - name: Sleep before start
+        if: ${{ inputs.sleep_before_start > 0 }}
+        run: |
+          echo "Sleeping for ${{ inputs.sleep_before_start }} seconds..."
+          sleep ${{ inputs.sleep_before_start }}
+
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 0
+#          token: ${{ gitverse.token }}
+        env:
+          GIT_TRACE: "2"
+          GIT_TRACE_PACKET: "1"
+          GIT_CURL_VERBOSE: "1"
+          GIT_TRACE2_EVENT_PRECISE: "1"
+          LFS_DEBUG: "1"
+          LFS_METRIC_DISABLE: "1"
+
+      - name: List all repository files
+        run: git ls-tree -r --name-only HEAD
